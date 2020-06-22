@@ -67,6 +67,17 @@ class RBF:
         if norm == 0: 
             return v
         return v / norm
+    
+def test_train_split(train_data,train_labels,Split):
+    
+    Train_size = round(len(train_data)*Split)
+        
+    # random permutation of the data in order to create a validation/test sets
+    idx = np.random.permutation(train_data.shape[0])
+    training_idx, test_idx = idx[:Train_size], idx[Train_size:]
+    x_train, x_test = train_data[training_idx,:], train_data[test_idx,:]
+    y_train, y_test = train_labels[training_idx,:], train_labels[test_idx,:]
+    return(x_train,y_train,x_test, y_test)
 ################################## SCRIPTS ####################################
 
 random.seed(1)
@@ -88,9 +99,13 @@ for x in range(441):
         output_labels1[x][0] = -1
 # =============================================================================
     
+random.seed(1)
+
+X = []
+output_labels = np.zeros([441,1])
 
 #=============================================================================
- ## implementation using equation from assignment
+## implementation using equation from assignment
 X = []
 x = 0
 for i in range(21):
@@ -107,52 +122,105 @@ for i in range(21):
 idx = np.random.permutation(len(X))
 X = np.array(X)[idx]
 Y = output_labels[idx]
-## check dupes
- 
-# for i in np.arange(0,440):
-#     for j in np.arange(i+1,441):
-#         if X2[i]==X2[j]:
-#             print("Duplicate found at position i= : ", i)
-#             print("\n j=",j)
-             
 #=============================================================================
 
-# Keep sigma at 5 from part 1
+# Now create the test/train split of 80/20
+
+x_train,y_train,x_test, y_test = test_train_split(X,Y,0.8)
+
+# Keep sigma at 3.5 from part 1
 MSE = []
-sigma = 1.5
+sigma = 3.5
 
 
 ###############################################################################
 # Calculate clusters through random selection
 Num_Clusters = 150
-idx = np.random.permutation(len(X))[:Num_Clusters]
-clusters1 = [X[i,:] for i in idx]
+idx = np.random.permutation(len(x_train))[:Num_Clusters]
+clusters1 = [x_train[i,:] for i in idx]
 
 # Calculate clusters through k-means
 clusters2 = KMeans(n_clusters=Num_Clusters,random_state=1).fit(X).cluster_centers_
 
+# Create the two models based on random clusters and kmeans clusters
 
-MSE_rand = []
-MSE_Kmeans = []
+RBF_Rand = RBF(x_train,clusters1,y_train,sigma)
+RBF_Kmeans = RBF(x_train,clusters2,y_train,sigma)
 
-for sigma in np.arange(0.5,3,0.1): 
-    RBF_Rand = RBF(X,clusters1,Y,sigma)
-    RBF_Kmeans = RBF(X,clusters2,Y,sigma)
+# Predict outputs on training data and test data
 
-    output_Rand = RBF_Rand.predict(X)
-    output_Kmeans = RBF_Kmeans.predict(X)
+output_Rand_train = RBF_Rand.predict(x_train)
+output_Kmeans_train = RBF_Kmeans.predict(x_train)
+
+output_Rand_test = RBF_Rand.predict(x_test)
+output_Kmeans_test = RBF_Kmeans.predict(x_test)
+
+# Calculate MSE for outputs
+
+MSE_Rand_train = RBF_Rand.MSE(output_Rand_train,y_train)
+MSE_Kmeans_train = RBF_Kmeans.MSE(output_Kmeans_train,y_train)
+
+MSE_Rand_test = RBF_Rand.MSE(output_Rand_test,y_test)
+MSE_Kmeans_test = RBF_Kmeans.MSE(output_Kmeans_test,y_test)
+
+print("Random Cluster Selection Train MSE: ", MSE_Rand_train)
+print("K-means Cluster Selection Train MSE: ", MSE_Kmeans_train)
+
+print("Random Cluster Selection Test MSE: ", MSE_Rand_test)
+print("K-means Cluster Selection Test MSE: ", MSE_Kmeans_test)
 
 
-    MSE_rand.append(RBF_Rand.MSE(output_Rand,Y))
-    MSE_Kmeans.append(RBF_Kmeans.MSE(output_Kmeans,Y))
+# Now vary sigma again, and create multiple models just to further compare the two methods
+
+MSE_train_rand = []
+MSE_train_kmeans = []
+MSE_test_rand = []
+MSE_test_kmeans = []
+
+for sigma in np.arange(0.5,3.5,0.1): 
+    RBF_Rand = RBF(x_train,clusters1,y_train,sigma)
+    RBF_Kmeans = RBF(x_train,clusters2,y_train,sigma)
+
+    output_Rand_train = RBF_Rand.predict(x_train)
+    output_Kmeans_train = RBF_Kmeans.predict(x_train)
     
-sigma = np.arange(0.5,3,0.1)
+    output_Rand_test = RBF_Rand.predict(x_test)
+    output_Kmeans_test = RBF_Kmeans.predict(x_test)
+
+    MSE_train_rand.append(RBF_Rand.MSE(output_Rand_train,y_train))
+    MSE_train_kmeans.append(RBF_Kmeans.MSE(output_Kmeans_train,y_train))
+    
+    MSE_test_rand.append(RBF_Rand.MSE(output_Rand_test,y_test))
+    MSE_test_kmeans.append(RBF_Kmeans.MSE(output_Kmeans_test,y_test))
+    
+    print("Random Cluster Selection Train MSE: ", RBF_Rand.MSE(output_Rand_train,y_train))
+    print("K-means Cluster Selection Train MSE: ", RBF_Kmeans.MSE(output_Kmeans_train,y_train))
+
+    print("Random Cluster Selection Test MSE: ", RBF_Rand.MSE(output_Rand_test,y_test))
+    print("K-means Cluster Selection Test MSE: ", RBF_Kmeans.MSE(output_Kmeans_test,y_test))
+    
+# Plot training results
+
+sigma = np.arange(0.5,3.5,0.1)
 fig,ax = plt.subplots()
-ax.plot(sigma,MSE_rand)
-ax.plot(sigma,MSE_Kmeans)
+ax.plot(sigma,MSE_train_rand)
+ax.plot(sigma,MSE_train_kmeans)
 ax.set(xlabel='Sigma',ylabel='MSE',
-      title='MSE vs. Spread Parameter')
+      title='Training MSE vs. Spread Parameter')
 ax.grid()
 
-fig.savefig("Q3_Part2_Zoom.png")
+fig.savefig("Q3_Part2_Train.png")
+plt.show()
+
+# Plot test results
+
+sigma = np.arange(0.5,3.5,0.1)
+fig,ax = plt.subplots()
+ax.plot(sigma,MSE_test_rand)
+ax.plot(sigma,MSE_test_kmeans)
+ax.set(xlabel='Sigma',ylabel='MSE',
+      title='Testing MSE vs. Spread Parameter')
+ax.grid()
+
+fig.savefig("Q3_Part2_Test.png")
 plt.show()

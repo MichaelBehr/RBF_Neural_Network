@@ -65,30 +65,26 @@ class RBF:
         if norm == 0: 
             return v
         return v / norm
+
+def test_train_split(train_data,train_labels,Split):
+    
+    Train_size = round(len(train_data)*Split)
+    
+    # random permutation of the data in order to create a validation/test sets
+    idx = np.random.permutation(train_data.shape[0])
+    training_idx, test_idx = idx[:Train_size], idx[Train_size:]
+    x_train, x_test = train_data[training_idx,:], train_data[test_idx,:]
+    y_train, y_test = train_labels[training_idx,:], train_labels[test_idx,:]
+    return(x_train,y_train,x_test, y_test)
 ################################## SCRIPTS ####################################
 
 random.seed(1)
 
 X = []
-X1 = []
-output_labels1 = np.zeros([441,1])
-output_labels2 = np.zeros([441,1])
-
-# =============================================================================
- ## uniform random implementation
-for x in range(441):
-    i = random.uniform(-2,2)
-    j = random.uniform(-2,2)
-    X1.append([i,j])
-    if((i**2+j**2)<=1):
-        output_labels1[x][0] = 1
-    if((i**2+j**2)>1):
-        output_labels1[x][0] = -1
-# =============================================================================
-    
+output_labels = np.zeros([441,1])
 
 #=============================================================================
- ## implementation using equation from assignment
+## implementation using equation from assignment
 X = []
 x = 0
 for i in range(21):
@@ -97,36 +93,82 @@ for i in range(21):
         x2 = -2+0.2*j
         X.append([x1,x2])
         if((x1**2+x2**2)<=1):
-            output_labels2[x][0] = 1
+            output_labels[x][0] = 1
         if((x1**2+x2**2)>1):
-            output_labels2[x][0] = -1
+            output_labels[x][0] = -1
         x = x + 1
 
 idx = np.random.permutation(len(X))
 X = np.array(X)[idx]
-Y = output_labels2[idx]
-## check dupes
- 
-# for i in np.arange(0,440):
-#     for j in np.arange(i+1,441):
-#         if X2[i]==X2[j]:
-#             print("Duplicate found at position i= : ", i)
-#             print("\n j=",j)
-             
+Y = output_labels[idx]
 #=============================================================================
-MSE = []
 
-for sigma in np.arange(2.7,3.5,0.01): 
-    RBF_obj = RBF(X,X,Y,sigma)
-    output = RBF_obj.predict(X)
-    MSE.append(RBF_obj.MSE(output,Y))
-    
-sigma = np.arange(2.7,3.5,0.01)
+# Now create the test/train split of 80/20
+
+x_train,y_train,x_test, y_test = test_train_split(X,Y,0.8)
+
+
+
+#=============================================================================
+MSE_train = []
+MSE_test = []
+
+# Now loop through various values of sigma and train the RBF network on the 
+# training data. The output is calculated through predicting both sets when 
+# sigma takes a broad range of values
+
+
+for sigma in np.arange(0.1,5,0.1): 
+    RBF_obj = RBF(x_train,x_train,y_train,sigma)
+    output_test = RBF_obj.predict(x_test)
+    output_train = RBF_obj.predict(x_train)
+    MSE_test.append(RBF_obj.MSE(output_test,y_test))
+    MSE_train.append(RBF_obj.MSE(output_train,y_train))
+    print("############   Sigma = " + str(sigma) + "   ############")
+    print("Training data MSE: " + str(RBF_obj.MSE(output_train,y_train)))
+    print("Training data MSE: " + str(RBF_obj.MSE(output_test,y_test)))
+#=============================================================================
+# plot predicted vs actual MSE results as sigma varies for both test/train data
+
+sigma = np.arange(0.1,5,0.1)
 fig,ax = plt.subplots()
-ax.plot(sigma,MSE)
+ax.plot(sigma,MSE_test)
 ax.set(xlabel='Sigma',ylabel='MSE',
-      title='MSE vs. Spread Parameter')
+      title='Test MSE vs. Spread Parameter')
 ax.grid()
 
-fig.savefig("Q3_Part1_Zoom.png")
+fig.savefig("Q3_Part1_test.png")
+plt.show()
+
+# TRAIN PLOT
+fig,ax = plt.subplots()
+ax.plot(sigma,MSE_train)
+ax.set(xlabel='Sigma',ylabel='MSE',
+      title='Train MSE vs. Spread Parameter')
+ax.grid()
+
+fig.savefig("Q3_Part1_train.png")
+plt.show()
+
+
+#=============================================================================
+# We see we have a massive spike in the MSE around the value of 2. Lets examine
+# MSE after 2.2
+
+fig,ax = plt.subplots()
+ax.plot(sigma[26:],MSE_test[26:])
+ax.set(xlabel='Sigma',ylabel='MSE',
+      title='Zoomed Test MSE vs. Spread Parameter')
+ax.grid()
+
+fig.savefig("Q3_Part1_test_Zoom.png")
+plt.show()
+
+fig,ax = plt.subplots()
+ax.plot(sigma[26:],MSE_train[26:])
+ax.set(xlabel='Sigma',ylabel='MSE',
+      title='Zoomed Train MSE vs. Spread Parameter')
+ax.grid()
+
+fig.savefig("Q3_Part1_train_Zoom.png")
 plt.show()
