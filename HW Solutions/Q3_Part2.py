@@ -177,7 +177,7 @@ MSE_train_kmeans = []
 MSE_test_rand = []
 MSE_test_kmeans = []
 
-for sigma in np.arange(0.5,3.5,0.1): 
+for sigma in np.arange(0.5,2,0.1): 
     RBF_Rand = RBF(x_train,clusters1,y_train,sigma)
     RBF_Kmeans = RBF(x_train,clusters2,y_train,sigma)
 
@@ -201,7 +201,7 @@ for sigma in np.arange(0.5,3.5,0.1):
     
 # Plot training results
 
-sigma = np.arange(0.5,3.5,0.1)
+sigma = np.arange(0.5,2,0.1)
 fig,ax = plt.subplots()
 ax.plot(sigma,MSE_train_rand)
 ax.plot(sigma,MSE_train_kmeans)
@@ -214,7 +214,7 @@ plt.show()
 
 # Plot test results
 
-sigma = np.arange(0.5,3.5,0.1)
+sigma = np.arange(0.5,2,0.1)
 fig,ax = plt.subplots()
 ax.plot(sigma,MSE_test_rand)
 ax.plot(sigma,MSE_test_kmeans)
