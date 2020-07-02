@@ -1,6 +1,6 @@
 # RBF_Neural_Network
 
-From scratch RBF_Neural_Network implementation. Has random and Kmeans methods for cluster centre selection. This is part of the second assignment for ECE 657. 
+From scratch RBF_Neural_Network implementation. Has both random, and Kmeans methods for cluster centre selection. This is part of the second assignment for ECE 657. 
 
 ## Files
 
